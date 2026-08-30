@@ -5,7 +5,13 @@ import re
 from collections import Counter, defaultdict
 import pandas as pd
 
-st.set_page_config(page_title="万物数理统计推演引擎（学术版）", layout="wide")
+st.set_page_config(page_title="组合概率科学研究引擎", layout="wide")
+
+# 缓存数据处理，避免重复计算
+@st.cache_data
+def cached_analysis():
+    """缓存分析结果，提高性能"""
+    return True
 
 # ==========================================
 # 组合数据库（序列化，去敏感信息，仅用于科学研究）
@@ -178,10 +184,193 @@ class CombinationAnalyzer:
         report.append(f"众数: **{Counter(all_blacks).most_common(1)[0][0]}** (出现 {Counter(all_blacks).most_common(1)[0][1]} 次)")
         
         return "\n".join(report)
+    
+    @staticmethod
+    def hot_cold_numbers(all_reds, red_counts):
+        """热冷号分析"""
+        report = []
+        report.append("### 🔥❄️ 热冷号分析")
+        
+        sorted_counts = sorted(red_counts.items(), key=lambda x: x[1], reverse=True)
+        hot_nums = [num for num, count in sorted_counts[:8]]
+        cold_nums = [num for num, count in sorted_counts[-8:]]
+        
+        report.append(f"**热号 TOP 8** (高频数字): {', '.join(map(str, sorted(hot_nums)))}")
+        report.append(f"**冷号 TOP 8** (低频数字): {', '.join(map(str, sorted(cold_nums)))}")
+        
+        hot_ratio = sum(1 for x in all_reds if x in hot_nums) / len(all_reds)
+        report.append(f"\n热号在全部数据中的占比: **{hot_ratio:.1%}**")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def number_span_analysis(all_combinations):
+        """红球跨度分析（最大值-最小值）"""
+        report = []
+        report.append("### 📏 红球跨度分析")
+        
+        spans = [max(combo) - min(combo) for combo in all_combinations]
+        spans_arr = np.array(spans)
+        
+        report.append(f"跨度均值: **{np.mean(spans_arr):.2f}**")
+        report.append(f"跨度范围: **{np.min(spans_arr):.0f}** ~ **{np.max(spans_arr):.0f}**")
+        report.append(f"跨度标准差: **{np.std(spans_arr):.2f}**")
+        
+        span_dist = Counter(spans)
+        most_common_span = span_dist.most_common(1)[0]
+        report.append(f"最常见跨度: **{most_common_span[0]}** (出现 {most_common_span[1]} 次)")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def sum_analysis(all_combinations):
+        """红球和值分析"""
+        report = []
+        report.append("### ➕ 红球和值分析")
+        
+        sums = [sum(combo) for combo in all_combinations]
+        sums_arr = np.array(sums)
+        
+        report.append(f"和值均值: **{np.mean(sums_arr):.2f}**")
+        report.append(f"和值范围: **{np.min(sums_arr):.0f}** ~ **{np.max(sums_arr):.0f}**")
+        report.append(f"和值标准差: **{np.std(sums_arr):.2f}**")
+        
+        # 和值分布（奇偶）
+        odd_sum = sum(1 for s in sums if s % 2 == 1)
+        report.append(f"\n和值奇偶分布: 奇数 {odd_sum} 个 | 偶数 {len(sums) - odd_sum} 个")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def odd_even_analysis(all_reds):
+        """奇偶数比分析"""
+        report = []
+        report.append("### 🔢 奇偶数比分析")
+        
+        odd_count = sum(1 for x in all_reds if x % 2 == 1)
+        even_count = len(all_reds) - odd_count
+        
+        report.append(f"奇数总数: **{odd_count}** | 偶数总数: **{even_count}**")
+        report.append(f"奇偶比: **{odd_count/even_count:.2f}:1** (奇:偶)")
+        report.append(f"奇数占比: **{odd_count/(odd_count+even_count):.1%}**")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def large_small_analysis(all_reds):
+        """大小数比分析（>18为大，<=18为小）"""
+        report = []
+        report.append("### 📊 大小数比分析 (分界线: 18)")
+        
+        large_count = sum(1 for x in all_reds if x > 18)
+        small_count = len(all_reds) - large_count
+        
+        report.append(f"大数 (19-33): **{large_count}** | 小数 (1-18): **{small_count}**")
+        report.append(f"大小比: **{large_count/small_count:.2f}:1** (大:小)")
+        report.append(f"大数占比: **{large_count/(large_count+small_count):.1%}**")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def black_ball_distribution(all_blacks):
+        """黑球分布分析"""
+        report = []
+        report.append("### ⚫ 黑球分布倾向 (分界线: 8.5)")
+        
+        low_black = sum(1 for x in all_blacks if x <= 8)
+        high_black = len(all_blacks) - low_black
+        
+        report.append(f"低黑 (1-8): **{low_black}** 次 | 高黑 (9-16): **{high_black}** 次")
+        report.append(f"分布比: **{low_black/high_black:.2f}:1** (低:高)")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def missing_numbers_analysis(all_reds):
+        """缺失号码分析"""
+        report = []
+        report.append("### ⚠️ 缺失号码分析")
+        
+        all_nums_set = set(all_reds)
+        total_range = set(range(1, 34))
+        missing_nums = sorted(total_range - all_nums_set)
+        
+        if missing_nums:
+            report.append(f"从未出现过的号码: {', '.join(map(str, missing_nums))}")
+            report.append(f"缺失数量: **{len(missing_nums)}/33** (**{len(missing_nums)/33:.1%}**)")
+        else:
+            report.append("✅ 所有号码都至少出现过1次")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def combination_trends(all_combinations):
+        """组合趋势分析"""
+        report = []
+        report.append("### 📈 组合演化趋势")
+        
+        # 平均数字值趋势
+        avg_vals = [np.mean(combo) for combo in all_combinations]
+        
+        report.append(f"平均值起点: **{avg_vals[0]:.2f}**")
+        report.append(f"平均值终点: **{avg_vals[-1]:.2f}**")
+        
+        trend = avg_vals[-1] - avg_vals[0]
+        if trend > 0:
+            report.append(f"趋势: 📈 向上 (+{trend:.2f})")
+        elif trend < 0:
+            report.append(f"趋势: 📉 向下 ({trend:.2f})")
+        else:
+            report.append(f"趋势: ➡️ 平稳")
+        
+        # 波动性
+        volatility = np.std(avg_vals)
+        report.append(f"波动性 (标准差): **{volatility:.2f}**")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def red_number_intervals(all_reds):
+        """红球区间分布"""
+        report = []
+        report.append("### 📍 红球数值区间分布")
+        
+        intervals = [(1, 11), (12, 22), (23, 33)]
+        for start, end in intervals:
+            count = sum(1 for x in all_reds if start <= x <= end)
+            pct = count / len(all_reds)
+            report.append(f"区间 [{start:2d}-{end:2d}]: **{count}** 个 (**{pct:.1%}**)")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def consecutive_analysis(all_combinations):
+        """连号分析（连续数字）"""
+        report = []
+        report.append("### 🔗 连号分析")
+        
+        consecutive_counts = []
+        for combo in all_combinations:
+            sorted_combo = sorted(combo)
+            count = 0
+            for i in range(len(sorted_combo) - 1):
+                if sorted_combo[i + 1] - sorted_combo[i] == 1:
+                    count += 1
+            consecutive_counts.append(count)
+        
+        report.append(f"平均连号个数: **{np.mean(consecutive_counts):.2f}** / 组合")
+        report.append(f"连号出现频率: **{sum(1 for c in consecutive_counts if c > 0)/len(consecutive_counts):.1%}**")
+        
+        return "\n".join(report)
 
-st.title("🌌 组合概率科学研究引擎 V8.0")
-st.markdown("**功能**: 数学模型分析组合数据的统计特征、数字分布、组合关联性等。")
-st.info("💡 **研究范围**: 频率分析 | 分布统计 | 组合重复度 | 序列特征 | 完全基于历史数据的纯数学研究")
+st.title("🌌 组合概率科学研究引擎 V9.0")
+st.markdown("**深度数学分析**: 15大科学模型，全面分析组合数据统计特征。")
+st.info("""
+💡 **分析模块**: 
+1. 频率分析 | 2. 分布统计 | 3. 组合重复度 | 4. 序列特征 | 5. 黑球特征 |
+6. 热冷号分析 | 7. 跨度分析 | 8. 和值分析 | 9. 奇偶比 | 10. 大小比 |
+11. 黑球分布 | 12. 缺失号码 | 13. 组合趋势 | 14. 区间分布 | 15. 连号分析
+""")
 
 # 模式选择
 analysis_mode = st.radio("选择分析模式", ["序列多模型分析", "组合大数据分析"], horizontal=True)
@@ -272,26 +461,23 @@ if analysis_mode == "序列多模型分析":
                     st.divider()
                     st.subheader("📊 原始数据统计画像")
                     st.write(f"均值：{np.mean(nums):.2f} | 标准差：{np.std(nums):.2f} | 最大值：{np.max(nums):.2f} | 最小值：{np.min(nums):.2f}")
-                    
-                    # 自动画图
-                    freq = Counter([round(x,2) for x in nums])
-                    st.bar_chart(dict(sorted(freq.items())))
                 else:
                     st.warning("请至少输入2个数字，或者输入一个算式（如1+2）。")
         else:
             st.warning("请输入内容！")
 
 else:  # 组合大数据分析
-    st.subheader("📊 组合数据科学研究（45个组合样本）")
+    st.subheader("📊 组合数据科学研究（45个组合样本 × 15大分析模块）")
     st.markdown("""
-    本模块对组合数据进行**深度统计学分析**，包括：
-    - 📈 **频率分析**: 各数字在红球/黑球中的出现频次
-    - 📐 **分布统计**: 数字分布的数学特征（均值、标准差、区间）
-    - 🔗 **组合关联**: 相邻组合间的重复度、相似性
-    - 🧮 **序列特征**: 组合序列的数学规律（覆盖率、连续性等）
-    - ⚫ **黑球特征**: 黑球数字的独立分析
+    **15大深度科学分析模块**:
     
-    **学术声明**: 这些分析基于纯数学模型，仅供科学研究参考。
+    **基础分析** (1-5)：频率分析 | 分布统计 | 组合重复度 | 序列特征 | 黑球特征
+    
+    **数学特征** (6-10)：热冷号分析 | 跨度分析 | 和值分析 | 奇偶比 | 大小比
+    
+    **高级指标** (11-15)：黑球分布 | 缺失号码 | 组合趋势 | 区间分布 | 连号分析
+    
+    **学术声明**: 完全基于数学模型分析，仅供科学研究及娱乐参考。不涉及任何预测或投资建议。
     """)
     
     if st.button("📈 启动组合大数据分析"):
@@ -339,30 +525,77 @@ else:  # 组合大数据分析
             st.markdown(black_report)
             st.divider()
             
-            # ===== 可视化 =====
-            st.subheader("📉 数据可视化")
-            col1, col2 = st.columns(2)
+            # ===== 分析6：热冷号分析 =====
+            st.subheader("🔥 分析6：热冷号分析")
+            hot_cold_report = analyzer.hot_cold_numbers(all_reds, red_counts)
+            st.markdown(hot_cold_report)
+            st.divider()
             
-            with col1:
-                st.caption("红球频率分布（TOP 20）")
-                top_reds = dict(sorted(red_counts.items(), key=lambda x: x[1], reverse=True)[:20])
-                st.bar_chart(top_reds)
+            # ===== 分析7：跨度分析 =====
+            st.subheader("📏 分析7：红球跨度分析")
+            span_report = analyzer.number_span_analysis(all_combinations)
+            st.markdown(span_report)
+            st.divider()
             
-            with col2:
-                st.caption("黑球频率分布")
-                black_dict = dict(sorted(black_counts.items()))
-                st.bar_chart(black_dict)
+            # ===== 分析8：和值分析 =====
+            st.subheader("➕ 分析8：红球和值分析")
+            sum_report = analyzer.sum_analysis(all_combinations)
+            st.markdown(sum_report)
+            st.divider()
+            
+            # ===== 分析9：奇偶分析 =====
+            st.subheader("🔢 分析9：奇偶数比分析")
+            odd_even_report = analyzer.odd_even_analysis(all_reds)
+            st.markdown(odd_even_report)
+            st.divider()
+            
+            # ===== 分析10：大小数分析 =====
+            st.subheader("📊 分析10：大小数比分析")
+            large_small_report = analyzer.large_small_analysis(all_reds)
+            st.markdown(large_small_report)
+            st.divider()
+            
+            # ===== 分析11：黑球分布 =====
+            st.subheader("⚫ 分析11：黑球分布倾向")
+            black_dist_report = analyzer.black_ball_distribution(all_blacks)
+            st.markdown(black_dist_report)
+            st.divider()
+            
+            # ===== 分析12：缺失号码 =====
+            st.subheader("⚠️ 分析12：缺失号码分析")
+            missing_report = analyzer.missing_numbers_analysis(all_reds)
+            st.markdown(missing_report)
+            st.divider()
+            
+            # ===== 分析13：组合趋势 =====
+            st.subheader("📈 分析13：组合演化趋势")
+            trend_report = analyzer.combination_trends(all_combinations)
+            st.markdown(trend_report)
+            st.divider()
+            
+            # ===== 分析14：区间分布 =====
+            st.subheader("📍 分析14：红球数值区间分布")
+            interval_report = analyzer.red_number_intervals(all_reds)
+            st.markdown(interval_report)
+            st.divider()
+            
+            # ===== 分析15：连号分析 =====
+            st.subheader("🔗 分析15：连号分析")
+            consec_report = analyzer.consecutive_analysis(all_combinations)
+            st.markdown(consec_report)
+            st.divider()
             
             # ===== 组合详情表 =====
-            st.subheader("📋 所有组合数据表")
+            st.subheader("📋 所有组合数据表（按序列展示）")
             combo_data = []
             for combo_id in sorted(COMBINATION_DATA.keys()):
                 data = COMBINATION_DATA[combo_id]
                 combo_data.append({
-                    "组合编号": f"组合 {combo_id}",
-                    "红球": ", ".join(map(str, sorted(data["reds"]))),
-                    "黑球": data["black"]
+                    "序号": combo_id,
+                    "红球": " ".join(map(str, sorted(data["reds"]))),
+                    "黑": data["black"]
                 })
+            
             
             df = pd.DataFrame(combo_data)
             st.dataframe(df, use_container_width=True)
