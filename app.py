@@ -363,6 +363,100 @@ class CombinationAnalyzer:
         
         return "\n".join(report)
 
+# ==========================================
+# 随机组合生成模拟器（基于统计特征）
+# ==========================================
+class RandomSimulator:
+    """基于历史数据特征的随机组合生成模拟"""
+    
+    @staticmethod
+    def generate_combination_batch(all_combinations, all_blacks, num_to_generate=5):
+        """批量生成模拟组合"""
+        
+        # 1. 分析历史数据的统计特征
+        all_reds_flat = sum(all_combinations, [])
+        red_counts = Counter(all_reds_flat)
+        black_counts = Counter(all_blacks)
+        
+        # 获取关键指标
+        red_freq_ratio = {num: count / len(all_reds_flat) for num, count in red_counts.items()}
+        
+        # 奇偶比
+        odd_ratio = sum(1 for x in all_reds_flat if x % 2 == 1) / len(all_reds_flat)
+        even_ratio = 1 - odd_ratio
+        
+        # 大小比 (>18 为大，<=18 为小)
+        large_ratio = sum(1 for x in all_reds_flat if x > 18) / len(all_reds_flat)
+        small_ratio = 1 - large_ratio
+        
+        # 跨度平均值和标准差
+        spans = [max(combo) - min(combo) for combo in all_combinations]
+        avg_span = np.mean(spans)
+        std_span = np.std(spans)
+        
+        # 和值平均值
+        sums = [sum(combo) for combo in all_combinations]
+        avg_sum = np.mean(sums)
+        std_sum = np.std(sums)
+        
+        # 黑球最常见值
+        most_common_black = black_counts.most_common(1)[0][0]
+        black_options = [num for num, count in black_counts.most_common(5)]
+        
+        # 2. 生成模拟组合
+        simulated_combos = []
+        for _ in range(num_to_generate):
+            # 生成6个红球
+            reds = []
+            attempts = 0
+            while len(reds) < 6 and attempts < 100:
+                # 基于频率权重选择
+                num = np.random.choice(list(range(1, 34)), p=[red_freq_ratio.get(i, 1/33) for i in range(1, 34)])
+                if num not in reds:
+                    reds.append(int(num))
+                attempts += 1
+            
+            # 如果失败，强制补全
+            while len(reds) < 6:
+                num = np.random.randint(1, 34)
+                if num not in reds:
+                    reds.append(num)
+            
+            reds.sort()
+            
+            # 生成1个黑球 - 从最常见的5个中选
+            black = np.random.choice(black_options)
+            
+            simulated_combos.append({
+                "reds": reds,
+                "black": black,
+                "sum": sum(reds),
+                "span": max(reds) - min(reds)
+            })
+        
+        return simulated_combos, {
+            "奇偶比": f"{odd_ratio:.1%}奇 {even_ratio:.1%}偶",
+            "大小比": f"{large_ratio:.1%}大 {small_ratio:.1%}小",
+            "平均跨度": f"{avg_span:.2f}",
+            "平均和值": f"{avg_sum:.2f}",
+            "黑球偏好": f"常见值: {black_options[:3]}"
+        }
+    
+    @staticmethod
+    def validate_simulated_combo(combo, reference_stats):
+        """验证生成的组合是否符合历史特征"""
+        reds = combo["reds"]
+        
+        odd_count = sum(1 for x in reds if x % 2 == 1)
+        large_count = sum(1 for x in reds if x > 18)
+        
+        report = []
+        report.append(f"**组合**: {' '.join(map(str, reds))} | **黑**: {combo['black']}")
+        report.append(f"和值: {combo['sum']} | 跨度: {combo['span']}")
+        report.append(f"奇偶: {odd_count}奇 {6-odd_count}偶 | 大小: {large_count}大 {6-large_count}小")
+        
+        return " | ".join(report)
+
 st.title("🌌 组合概率科学研究引擎 V9.0")
 st.markdown("**深度数学分析**: 15大科学模型，全面分析组合数据统计特征。")
 st.info("""
@@ -373,7 +467,7 @@ st.info("""
 """)
 
 # 模式选择
-analysis_mode = st.radio("选择分析模式", ["序列多模型分析", "组合大数据分析"], horizontal=True)
+analysis_mode = st.radio("选择分析模式", ["序列多模型分析", "组合大数据分析", "随机组合生成模拟"], horizontal=True)
 
 # 核心多模型预测算法
 def get_multi_predictions(history):
@@ -466,7 +560,7 @@ if analysis_mode == "序列多模型分析":
         else:
             st.warning("请输入内容！")
 
-else:  # 组合大数据分析
+elif analysis_mode == "组合大数据分析":
     st.subheader("📊 组合数据科学研究（45个组合样本 × 15大分析模块）")
     st.markdown("""
     **15大深度科学分析模块**:
@@ -601,6 +695,68 @@ else:  # 组合大数据分析
             st.dataframe(df, use_container_width=True)
             
             st.caption("✅ 组合分析完成。此分析为纯数学统计研究，不具备任何预测意义。")
+
+else:  # 随机组合生成模拟
+    st.subheader("🎲 随机组合生成模拟器（基于45个历史组合的统计特征）")
+    st.markdown("""
+    **工作原理**：
+    - 分析45个历史组合的统计特征（频率、奇偶比、大小比、跨度、和值等）
+    - 基于这些特征进行加权随机抽样
+    - 生成符合历史分布规律的"模拟组合"
+    - **完全是娱乐性演示，不具备任何预测能力**
+    """)
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        num_generate = st.slider("生成模拟组合的数量", min_value=1, max_value=20, value=5)
+    with col2:
+        if st.button("🎰 开始模拟生成"):
+            st.info("⏳ 正在根据历史数据特征生成模拟组合...")
+            
+            # 提取数据
+            all_reds = []
+            all_blacks = []
+            all_combinations = []
+            
+            for combo_id in sorted(COMBINATION_DATA.keys()):
+                data = COMBINATION_DATA[combo_id]
+                all_reds.extend(data["reds"])
+                all_blacks.append(data["black"])
+                all_combinations.append(data["reds"])
+            
+            # 生成模拟组合
+            simulator = RandomSimulator()
+            simulated_combos, stats = simulator.generate_combination_batch(all_combinations, all_blacks, num_generate)
+            
+            st.divider()
+            st.subheader("📊 生成参数说明")
+            stats_text = " | ".join([f"**{k}**: {v}" for k, v in stats.items()])
+            st.markdown(f"模拟依据：{stats_text}")
+            
+            st.divider()
+            st.subheader("🎯 生成的模拟组合")
+            
+            for idx, combo in enumerate(simulated_combos, 1):
+                validation = simulator.validate_simulated_combo(combo, stats)
+                st.write(f"**模拟组合 {idx}**: {validation}")
+            
+            st.divider()
+            
+            # 生成数据表
+            sim_data = []
+            for idx, combo in enumerate(simulated_combos, 1):
+                sim_data.append({
+                    "序号": f"模拟-{idx}",
+                    "红球": " ".join(map(str, combo["reds"])),
+                    "黑": combo["black"],
+                    "和值": combo["sum"],
+                    "跨度": combo["span"]
+                })
+            
+            sim_df = pd.DataFrame(sim_data)
+            st.dataframe(sim_df, use_container_width=True)
+            
+            st.caption("✅ 模拟生成完成。**此为娱乐性演示，完全基于数学统计，不具备任何预测或投资意义。**")
 
 st.divider()
 st.caption("⚠️ 最终声明：本工具为组合数据数学统计研究平台，所有分析基于纯数学模型。此分析不具备任何预测能力，严禁用于任何违法用途。")
