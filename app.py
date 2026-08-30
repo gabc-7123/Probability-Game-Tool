@@ -15,12 +15,9 @@ try:
     from sympy import symbols, solve, diff, integrate, Rational, exp, sin, pi, sqrt
     import scipy.stats as stats
     HAS_ADVANCED_MATH = True
-    print("【系统状态】高级数学库加载成功！解方程和高级分布功能已开启。")
 except ImportError:
     # 如果没装（比如云端），自动跳过，不报错
     HAS_ADVANCED_MATH = False
-    print("【系统状态】高级数学库未找到，已降级为基础数理模式（不影响统计、易经等核心功能）。")
-
 
 # ==========================================
 # 学术研究与娱乐声明（合规最高优先级）
@@ -34,7 +31,7 @@ st.error("""
 **严禁将本系统用于任何违反法律法规的行为。请严格遵守国家法律法规，理性看待随机事件。**
 """)
 
-st.title("🌌 万物数理统计推演引擎 V3.0（终极融合版）")
+st.title("🌌 万物数理统计推演引擎 V4.0（稳定智能版）")
 st.markdown("**纯黑盒模式。输入任意数据或方程，自动调动全部现代与传统模型融合推演。**")
 
 # ==========================================
@@ -42,23 +39,8 @@ st.markdown("**纯黑盒模式。输入任意数据或方程，自动调动全�
 # ==========================================
 class AdvancedMath:
     @staticmethod
-    def exponential_dist(lambd, x):
-        return lambd * exp(-lambd * x)
-
-    @staticmethod
-    def t_distribution(x, df):
-        return stats.t.pdf(x, df)
-
-    @staticmethod
-    def f_distribution(x, d1, d2):
-        return stats.f.pdf(x, d1, d2)
-
-    @staticmethod
-    def negative_binomial(k, r, p):
-        return stats.nbinom.pmf(k, r, p)
-
-    @staticmethod
     def auto_solve_equation(equation_str):
+        if not HAS_ADVANCED_MATH: return "当前云端环境未安装高级数学库，无法解方程。"
         x = symbols('x')
         return solve(equation_str, x)
 
@@ -105,25 +87,20 @@ class ModernMath:
         slope, intercept = np.polyfit(x, y, 1)
         return f"线性回归方程：Y = {slope:.4f}X + {intercept:.4f}"
 
-# ==========================================
 # 纯学术模拟（无敏感词）
-# ==========================================
 class PureMathSimulator:
     @staticmethod
     def simulate_sequence_model(history):
         if len(history) < 3: return "数据不足，需至少输入3个数字"
         last_three = [int(x) % 10 for x in history[-3:]]
-        return f"三位模数序列最近三期走势：{last_three}。单次样本理论匹配概率为1/1000。基于模10周期规律，下一阶段关注的数理范围在 {[(x+1)%10 for x in last_three]} 附近波动。"
+        return f"三位模数序列最近三期走势：{last_three}。单次样本理论匹配概率为1/1000。"
 
     @staticmethod
     def simulate_pool_model(reds, blues):
         if len(reds) < 5 or len(blues) < 2: return "数据不足，请输入 5个前区数字（1-35）和 2个后区数字（1-12）"
         combos = math.comb(35, 5) * math.comb(12, 2)
-        return f"多维空间抽取总数：{combos:,}。完美匹配的理论数学概率为 1/{combos:,}。根据大数定律，长期数学期望特征为负，请理性对待。"
+        return f"多维空间抽取总数：{combos:,}。完美匹配的理论数学概率为 1/{combos:,}。"
 
-# ==========================================
-# 古典数理模型
-# ==========================================
 class AncientWisdom:
     TIAN_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
     DI_ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
@@ -175,68 +152,15 @@ class BaZiModel:
         except:
             return "未安装lunar_python库，无法排盘"
 
-# ==========================================
-# 终极融合引擎
-# ==========================================
 class UltimateOracle:
-    @staticmethod
-    def moving_average_forecast(nums, window=3):
-        if len(nums) < window:
-            return "移动平均预测：样本不足，无法生成稳定估计。"
-        seq = [float(x) for x in nums]
-        window_vals = seq[-window:]
-        forecast = sum(window_vals) / len(window_vals)
-        return f"移动平均预测（窗口={window}）：下一期均值估计约为 {forecast:.4f}，仅为时间序列的基础平滑示例。"
-
-    @staticmethod
-    def exponential_smoothing_forecast(nums, alpha=0.4):
-        if len(nums) < 2:
-            return "指数平滑预测：样本不足。"
-        seq = [float(x) for x in nums]
-        s = seq[0]
-        for x in seq[1:]:
-            s = alpha * x + (1 - alpha) * s
-        return f"指数平滑预测（α={alpha}）：下一期平滑值估计约为 {s:.4f}，仅作教学级时间序列模拟。"
-
-    @staticmethod
-    def linear_trend_forecast(nums):
-        if len(nums) < 2:
-            return "线性趋势预测：样本不足。"
-        seq = np.array([float(x) for x in nums], dtype=float)
-        x = np.arange(len(seq))
-        slope, intercept = np.polyfit(x, seq, 1)
-        pred = slope * (len(seq)) + intercept
-        return f"线性趋势预测：趋势方程 Y = {slope:.4f}X + {intercept:.4f}，下一期预测值约为 {pred:.4f}。"
-
-    @staticmethod
-    def monte_carlo_forecast(nums, trials=2000):
-        if len(nums) < 2:
-            return "蒙特卡洛模拟：样本不足。"
-        seq = np.array([float(x) for x in nums], dtype=float)
-        mu = seq.mean()
-        sigma = seq.std(ddof=1) if len(seq) > 1 else 1.0
-        sim = np.random.normal(mu, sigma, trials)
-        p5, p50, p95 = np.percentile(sim, [5, 50, 95])
-        return f"蒙特卡洛模拟（{trials}次）：中位数约 {p50:.4f}，5%~95%分位区间为 [{p5:.4f}, {p95:.4f}]，仅用于随机过程教学示例。"
-
-    @staticmethod
-    def binomial_probability(n, p, k):
-        if n < 0 or p < 0 or p > 1 or k < 0 or k > n:
-            return "二项分布参数超出有效范围。"
-        prob = math.comb(n, k) * (p ** k) * ((1 - p) ** (n - k))
-        return f"二项分布 P(X={k}) = {prob:.6f}（n={n}, p={p:.3f}）。"
-
-    @staticmethod
-    def poisson_probability(lam, k):
-        if lam < 0 or k < 0:
-            return "泊松分布参数超出有效范围。"
-        prob = (lam ** k) * math.exp(-lam) / math.factorial(k)
-        return f"泊松分布 P(X={k}) = {prob:.6f}（λ={lam:.3f}）。"
-
     def calculate_everything(self, raw_input):
-        # === 新增：基础算式优先识别（纯数学计算，直接出结果） ===
-        import re
-        if re.search(r'\d+\s*[\+\-\*\/]\s*\d+', raw_input) and not any(k in raw_input for k in ['预测', '序列', '组合', '易经', '五行', '年份', '八字', '排盘']):
+        
+        # === 核心修复1：基础算式优先识别（无论云端环境如何，1+2 都必须算出 3） ===
+        # 提取数字
+        nums = load_data(raw_input)
+        
+        # 如果输入包含加减乘除，且没有指定关键词，直接算结果
+        if re.search(r'\d+\s*[\+\-\*\/]\s*\d+', raw_input) and not any(k in raw_input for k in ['预测', '序列', '组合', '易经', '五行', '年份', '八字', '排盘', '解方程']):
             try:
                 expression = raw_input.replace('=', '')
                 result = eval(expression)
@@ -244,36 +168,21 @@ class UltimateOracle:
             except:
                 pass
 
-        # 原有的提取数字和统计逻辑在下方...
-        nums = load_data(raw_input)
         report = []
         
-        # 高级自动求解（“自动思考”）
-        if "解方程" in raw_input or "求解" in raw_input or "=" in raw_input:
-            x = symbols('x')
+        # === 核心修复2：高级自动求解（仅在本地装了sympy时才运行，云端不报错） ===
+        if HAS_ADVANCED_MATH and ("解方程" in raw_input or "求解" in raw_input or "=" in raw_input):
             if "=" in raw_input:
                 eq_str = raw_input.split("=")[1]
                 try:
                     solutions = AdvancedMath.auto_solve_equation(eq_str)
                     report.append(f"🧮 符号计算引擎：方程的解为 {solutions}")
                 except:
-                    report.append("🧮 符号计算引擎：方程格式暂不支持，请尝试如：解方程 x**2 - 4 = 0")
+                    report.append("🧮 符号计算引擎：方程格式暂不支持")
         
         if len(nums) < 2:
             return "数据不足，请至少输入2个数字，或包含上述公式。" + "".join(report), None, None
-
-        # === 进阶合法模型：时间序列与概率分布 ===
-        if len(nums) >= 3:
-            report.append(f"📉 {self.moving_average_forecast(nums, 3)}")
-            report.append(f"📈 {self.exponential_smoothing_forecast(nums, 0.4)}")
-            report.append(f"📐 {self.linear_trend_forecast(nums)}")
-            report.append(f"🎲 {self.monte_carlo_forecast(nums, 2000)}")
-
-        if len(nums) >= 2:
-            p = min(max(np.mean(np.array(nums)) / (np.max(np.array(nums)) + 1e-9), 0.05), 0.95)
-            report.append(f"🎯 {self.binomial_probability(max(5, int(abs(np.mean(nums)) + 1)), p, min(3, max(0, int(abs(np.mean(nums)) // 2))))}")
-            report.append(f"🧮 {self.poisson_probability(max(0.5, abs(np.mean(nums)) / 3), min(4, max(0, int(abs(np.mean(nums)) // 2))))}")
-
+        
         mu = np.mean(nums)
         sigma = np.std(nums)
         sigma = sigma if sigma > 0 else 1
@@ -322,12 +231,10 @@ class UltimateOracle:
                 best = max(probs, key=probs.get)
                 report.append(f"🔮 马尔可夫链模型：下一节点最可能出现【{best}】，数学概率 {probs[best]/sum(probs.values()):.2%}")
 
-        # 图表数据
         freq_data = Counter([round(x, 2) for x in nums])
         bar_data = dict(sorted(freq_data.items()))
         walk_path = ModernMath.random_walk(nums)
 
-        # 综合结论
         total_score = 0
         if mu > 0: total_score += 1
         elif mu < 0: total_score -= 1
@@ -354,20 +261,22 @@ class UltimateOracle:
 
 oracle = UltimateOracle()
 
-# 历史记录
 if "history" not in st.session_state:
     st.session_state.history = []
 
-user_input = st.text_area("请输入任何数据（数值、模拟序列、历史序列、年份、排盘参数）或方程（如：解方程 x**2 - 4 = 0）：", height=120)
+user_input = st.text_area("请输入任何数据（数值、模拟序列、年份、排盘参数）或算式（如：1+2）：", height=120)
 
 if st.button("一键启动全模型数理推演"):
     if user_input:
-        with st.spinner('正在并行调动符号计算、数理统计、卡方检验、线性回归、正态分布、贝叶斯、组合数学、阴阳、五行、易经、马尔可夫等全模型...'):
+        with st.spinner('正在并行调动数理统计、卡方检验、线性回归、正态分布、贝叶斯、组合数学、阴阳、五行、易经、马尔可夫等全模型...'):
             import time
-            time.sleep(1)
+            time.sleep(0.5)
             results = oracle.calculate_everything(user_input)
-            if isinstance(results[0], str) and "数据不足" in results[0]:
-                st.warning(results[0])
+            if isinstance(results[0], str) and ("数据不足" in results[0] or "算式计算结果" in results[0]):
+                if "算式计算结果" in results[0]:
+                    st.success(results[0])
+                else:
+                    st.warning(results[0])
             else:
                 conclusion, reports, charts = results
                 st.session_state.history.append(user_input)
