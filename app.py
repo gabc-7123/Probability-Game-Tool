@@ -5,6 +5,10 @@ import re
 import random
 from collections import Counter, defaultdict
 
+# --- 导入高级数学引擎 ---
+from sympy import symbols, solve, diff, integrate, Rational, exp, sin, pi, sqrt
+import scipy.stats as stats
+
 # ==========================================
 # 学术研究与娱乐声明（合规最高优先级）
 # ==========================================
@@ -17,10 +21,37 @@ st.error("""
 **严禁将本系统用于任何违反法律法规的行为。请严格遵守国家法律法规，理性看待随机事件。**
 """)
 
-st.title("🌌 万物数理统计推演引擎 V2.0（可视化版）")
-st.markdown("**纯黑盒模式。输入任意数据，系统自动调动现代数理统计、组合数学、古典数理模型进行融合推演。**")
+st.title("🌌 万物数理统计推演引擎 V3.0（终极融合版）")
+st.markdown("**纯黑盒模式。输入任意数据或方程，自动调动全部现代与传统模型融合推演。**")
 
-# 缓存优化（防止重复计算）
+# ==========================================
+# 高级数学公式库
+# ==========================================
+class AdvancedMath:
+    @staticmethod
+    def exponential_dist(lambd, x):
+        return lambd * exp(-lambd * x)
+
+    @staticmethod
+    def t_distribution(x, df):
+        return stats.t.pdf(x, df)
+
+    @staticmethod
+    def f_distribution(x, d1, d2):
+        return stats.f.pdf(x, d1, d2)
+
+    @staticmethod
+    def negative_binomial(k, r, p):
+        return stats.nbinom.pmf(k, r, p)
+
+    @staticmethod
+    def auto_solve_equation(equation_str):
+        x = symbols('x')
+        return solve(equation_str, x)
+
+# ==========================================
+# 现代数理模型
+# ==========================================
 @st.cache_data
 def load_data(input_str):
     return [float(x) for x in re.findall(r"-?\d+\.?\d*", input_str)]
@@ -47,23 +78,23 @@ class ModernMath:
 
     @staticmethod
     def chi_square_test(nums):
-        """卡方检验：检测序列是否均匀分布（纯数学学术实验）"""
         if len(nums) < 10: return "样本太少，无法进行卡方检验"
         observed = Counter(nums)
         expected = len(nums) / len(observed) if len(observed) > 0 else 1
         chi_sq = sum((count - expected) ** 2 / expected for count in observed.values())
-        return f"卡方统计量 = {chi_sq:.4f}（数值越小，表示分布越接近均匀随机性）"
+        return f"卡方统计量 = {chi_sq:.4f}（数值越小，分布越均匀）"
 
     @staticmethod
     def linear_regression(nums):
-        """简单线性回归：拟合趋势线"""
         if len(nums) < 2: return "数据不足"
         x = np.arange(len(nums))
         y = np.array(nums)
         slope, intercept = np.polyfit(x, y, 1)
-        return f"线性回归方程：Y = {slope:.4f}X + {intercept:.4f}（斜率为正表示整体趋势向上，负为向下）"
+        return f"线性回归方程：Y = {slope:.4f}X + {intercept:.4f}"
 
-# 纯学术概念模型
+# ==========================================
+# 纯学术模拟（无敏感词）
+# ==========================================
 class PureMathSimulator:
     @staticmethod
     def simulate_sequence_model(history):
@@ -77,6 +108,9 @@ class PureMathSimulator:
         combos = math.comb(35, 5) * math.comb(12, 2)
         return f"多维空间抽取总数：{combos:,}。完美匹配的理论数学概率为 1/{combos:,}。根据大数定律，长期数学期望特征为负，请理性对待。"
 
+# ==========================================
+# 古典数理模型
+# ==========================================
 class AncientWisdom:
     TIAN_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
     DI_ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
@@ -128,13 +162,27 @@ class BaZiModel:
         except:
             return "未安装lunar_python库，无法排盘"
 
+# ==========================================
+# 终极融合引擎
+# ==========================================
 class UltimateOracle:
     def calculate_everything(self, raw_input):
         nums = load_data(raw_input)
         report = []
         
+        # 高级自动求解（“自动思考”）
+        if "解方程" in raw_input or "求解" in raw_input or "=" in raw_input:
+            x = symbols('x')
+            if "=" in raw_input:
+                eq_str = raw_input.split("=")[1]
+                try:
+                    solutions = AdvancedMath.auto_solve_equation(eq_str)
+                    report.append(f"🧮 符号计算引擎：方程的解为 {solutions}")
+                except:
+                    report.append("🧮 符号计算引擎：方程格式暂不支持，请尝试如：解方程 x**2 - 4 = 0")
+        
         if len(nums) < 2:
-            return "数据不足，请至少输入2个数字。", None, None
+            return "数据不足，请至少输入2个数字，或包含上述公式。" + "".join(report), None, None
         
         mu = np.mean(nums)
         sigma = np.std(nums)
@@ -184,11 +232,12 @@ class UltimateOracle:
                 best = max(probs, key=probs.get)
                 report.append(f"🔮 马尔可夫链模型：下一节点最可能出现【{best}】，数学概率 {probs[best]/sum(probs.values()):.2%}")
 
-        # 计算图表数据
+        # 图表数据
         freq_data = Counter([round(x, 2) for x in nums])
         bar_data = dict(sorted(freq_data.items()))
         walk_path = ModernMath.random_walk(nums)
 
+        # 综合结论
         total_score = 0
         if mu > 0: total_score += 1
         elif mu < 0: total_score -= 1
@@ -215,31 +264,28 @@ class UltimateOracle:
 
 oracle = UltimateOracle()
 
-# 历史记录功能
+# 历史记录
 if "history" not in st.session_state:
     st.session_state.history = []
 
-user_input = st.text_area("请输入任何数据（数值、模拟序列、历史序列、年份、排盘参数）：", height=120, placeholder="例如：1 5 9 20 33 或 序列 3 5 8 2 7 或 组合 1 2 3 4 5 6 7 或 历史 1 2 3 5 8")
+user_input = st.text_area("请输入任何数据（数值、模拟序列、历史序列、年份、排盘参数）或方程（如：解方程 x**2 - 4 = 0）：", height=120)
 
 if st.button("一键启动全模型数理推演"):
     if user_input:
-        with st.spinner('正在并行调动数理统计、卡方检验、线性回归、正态分布、贝叶斯、组合数学、阴阳、五行、易经、马尔可夫等全模型...'):
+        with st.spinner('正在并行调动符号计算、数理统计、卡方检验、线性回归、正态分布、贝叶斯、组合数学、阴阳、五行、易经、马尔可夫等全模型...'):
             import time
             time.sleep(1)
             results = oracle.calculate_everything(user_input)
-            
             if isinstance(results[0], str) and "数据不足" in results[0]:
                 st.warning(results[0])
             else:
                 conclusion, reports, charts = results
-                st.session_state.history.append(user_input) # 加入历史
+                st.session_state.history.append(user_input)
                 st.success(conclusion)
                 st.divider()
                 st.subheader("数理模型计算过程：")
                 for r in reports:
                     st.write(r)
-                
-                # 图表展示
                 st.subheader("📉 数据分布与随机游走可视化")
                 bar_data, walk_path = charts
                 col1, col2 = st.columns(2)
@@ -254,7 +300,6 @@ if st.button("一键启动全模型数理推演"):
     else:
         st.warning("请输入内容！")
 
-# 显示历史记录
 if st.session_state.history:
     st.divider()
     st.subheader("📚 历史推演记录（仅供学术对照）")
