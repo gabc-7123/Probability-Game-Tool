@@ -5,9 +5,22 @@ import re
 import random
 from collections import Counter, defaultdict
 
-# --- 导入高级数学引擎 ---
-from sympy import symbols, solve, diff, integrate, Rational, exp, sin, pi, sqrt
-import scipy.stats as stats
+# ==========================================
+# 高级数学库智能开关（优先运行，装不上自动跳过）
+# ==========================================
+HAS_ADVANCED_MATH = False  # 默认假设没装
+
+try:
+    # 优先尝试导入高级库（本地终端已经装了，这里一定成功）
+    from sympy import symbols, solve, diff, integrate, Rational, exp, sin, pi, sqrt
+    import scipy.stats as stats
+    HAS_ADVANCED_MATH = True
+    print("【系统状态】高级数学库加载成功！解方程和高级分布功能已开启。")
+except ImportError:
+    # 如果没装（比如云端），自动跳过，不报错
+    HAS_ADVANCED_MATH = False
+    print("【系统状态】高级数学库未找到，已降级为基础数理模式（不影响统计、易经等核心功能）。")
+
 
 # ==========================================
 # 学术研究与娱乐声明（合规最高优先级）
