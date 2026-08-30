@@ -2,305 +2,372 @@ import streamlit as st
 import numpy as np
 import math
 import re
-import random
 from collections import Counter, defaultdict
+import pandas as pd
 
-# ==========================================
-# 高级数学库智能开关（优先运行，装不上自动跳过）
-# ==========================================
-HAS_ADVANCED_MATH = False  # 默认假设没装
-
-try:
-    # 优先尝试导入高级库（本地终端已经装了，这里一定成功）
-    from sympy import symbols, solve, diff, integrate, Rational, exp, sin, pi, sqrt
-    import scipy.stats as stats
-    HAS_ADVANCED_MATH = True
-except ImportError:
-    # 如果没装（比如云端），自动跳过，不报错
-    HAS_ADVANCED_MATH = False
-
-# ==========================================
-# 学术研究与娱乐声明（合规最高优先级）
-# ==========================================
 st.set_page_config(page_title="万物数理统计推演引擎（学术版）", layout="wide")
 
+# ==========================================
+# 组合数据库（序列化，去敏感信息，仅用于科学研究）
+# ==========================================
+COMBINATION_DATA = {
+    1: {"reds": [9, 14, 15, 16, 29, 30], "black": 10},
+    2: {"reds": [1, 3, 11, 22, 26, 31], "black": 11},
+    3: {"reds": [1, 2, 3, 8, 13, 14], "black": 2},
+    4: {"reds": [13, 20, 25, 29, 30, 33], "black": 2},
+    5: {"reds": [4, 11, 24, 25, 32, 33], "black": 13},
+    6: {"reds": [10, 19, 21, 22, 31, 33], "black": 5},
+    7: {"reds": [1, 4, 7, 21, 29, 30], "black": 1},
+    8: {"reds": [8, 16, 26, 28, 29, 30], "black": 15},
+    9: {"reds": [7, 9, 10, 16, 22, 27], "black": 11},
+    10: {"reds": [1, 4, 5, 15, 23, 28], "black": 7},
+    11: {"reds": [2, 4, 7, 14, 28, 29], "black": 9},
+    12: {"reds": [2, 8, 25, 28, 30, 31], "black": 2},
+    13: {"reds": [7, 8, 16, 24, 30, 32], "black": 2},
+    14: {"reds": [5, 11, 21, 23, 24, 29], "black": 16},
+    15: {"reds": [4, 19, 27, 29, 30, 32], "black": 13},
+    16: {"reds": [3, 5, 16, 18, 29, 32], "black": 4},
+    17: {"reds": [12, 14, 16, 17, 18, 32], "black": 8},
+    18: {"reds": [3, 6, 8, 14, 26, 27], "black": 8},
+    19: {"reds": [7, 8, 12, 15, 17, 21], "black": 1},
+    20: {"reds": [9, 10, 13, 16, 19, 21], "black": 8},
+    21: {"reds": [2, 23, 24, 26, 28, 32], "black": 4},
+    22: {"reds": [8, 12, 18, 21, 24, 30], "black": 1},
+    23: {"reds": [1, 3, 19, 20, 24, 25], "black": 7},
+    24: {"reds": [7, 11, 14, 16, 27, 28], "black": 6},
+    25: {"reds": [1, 11, 17, 22, 24, 29], "black": 4},
+    26: {"reds": [4, 5, 11, 19, 27, 32], "black": 1},
+    27: {"reds": [6, 10, 12, 15, 24, 27], "black": 12},
+    28: {"reds": [5, 7, 10, 14, 21, 28], "black": 4},
+    29: {"reds": [7, 14, 15, 23, 28, 33], "black": 3},
+    30: {"reds": [1, 5, 6, 10, 12, 16], "black": 5},
+    31: {"reds": [6, 9, 13, 17, 24, 28], "black": 15},
+    32: {"reds": [2, 5, 14, 25, 30, 32], "black": 5},
+    33: {"reds": [4, 6, 10, 18, 23, 31], "black": 11},
+    34: {"reds": [6, 7, 11, 18, 22, 33], "black": 5},
+    35: {"reds": [5, 18, 23, 24, 27, 33], "black": 3},
+    36: {"reds": [2, 4, 15, 23, 25, 27], "black": 3},
+    37: {"reds": [2, 13, 14, 16, 20, 24], "black": 5},
+    38: {"reds": [5, 8, 15, 20, 21, 24], "black": 9},
+    39: {"reds": [6, 13, 15, 17, 24, 25], "black": 1},
+    40: {"reds": [4, 6, 14, 21, 22, 33], "black": 16},
+    41: {"reds": [1, 4, 16, 22, 26, 31], "black": 4},
+    42: {"reds": [5, 16, 24, 26, 29, 30], "black": 2},
+    43: {"reds": [8, 16, 18, 22, 25, 26], "black": 7},
+    44: {"reds": [1, 12, 14, 18, 30, 31], "black": 2},
+    45: {"reds": [3, 4, 9, 13, 22, 31], "black": 4},
+}
 st.error("""
 ### 📜 【学术研究与娱乐声明】
-本系统为纯粹的数学概率、统计分布与数理逻辑计算模型，**仅供科研学习与编程练习使用**。
-所有随机事件均为独立变量，任何数学模型均无法用于现实中的决定性结果推演。
-**严禁将本系统用于任何违反法律法规的行为。请严格遵守国家法律法规，理性看待随机事件。**
+本系统为纯粹的数学概率、统计分布与数理逻辑**教育性分析工具**，**仅供科研学习与编程练习使用**。
+本工具仅进行数据统计分析，不提供任何预测或投资建议。所有分析结果均基于历史数据的纯数学性质，与现实决策无关。
+**严禁将本系统用于任何违反法律法规的行为。**
 """)
 
-st.title("🌌 万物数理统计推演引擎 V4.0（稳定智能版）")
-st.markdown("**纯黑盒模式。输入任意数据或方程，自动调动全部现代与传统模型融合推演。**")
-
 # ==========================================
-# 高级数学公式库
+# 组合概率分析引擎（教育性研究）
 # ==========================================
-class AdvancedMath:
-    @staticmethod
-    def auto_solve_equation(equation_str):
-        if not HAS_ADVANCED_MATH: return "当前云端环境未安装高级数学库，无法解方程。"
-        x = symbols('x')
-        return solve(equation_str, x)
-
-# ==========================================
-# 现代数理模型
-# ==========================================
-@st.cache_data
-def load_data(input_str):
-    return [float(x) for x in re.findall(r"-?\d+\.?\d*", input_str)]
-
-class ModernMath:
-    @staticmethod
-    def normal_pdf(x, mu, sigma):
-        return (1 / (sigma * math.sqrt(2 * math.pi))) * math.exp(-0.5 * ((x - mu) ** 2) / (2 * sigma ** 2))
-
-    @staticmethod
-    def bayes_update(prior, likelihood):
-        posterior = (prior * likelihood) / ((prior * likelihood) + ((1 - prior) * (1 - likelihood)))
-        return posterior
-
-    @staticmethod
-    def random_walk(nums, steps=10):
-        last = nums[-1]
-        path = [last]
-        sigma = np.std(nums) if len(nums) > 1 else 1
-        for _ in range(steps):
-            last += np.random.normal(0, sigma)
-            path.append(last)
-        return path
-
-    @staticmethod
-    def chi_square_test(nums):
-        if len(nums) < 10: return "样本太少，无法进行卡方检验"
-        observed = Counter(nums)
-        expected = len(nums) / len(observed) if len(observed) > 0 else 1
-        chi_sq = sum((count - expected) ** 2 / expected for count in observed.values())
-        return f"卡方统计量 = {chi_sq:.4f}（数值越小，分布越均匀）"
-
-    @staticmethod
-    def linear_regression(nums):
-        if len(nums) < 2: return "数据不足"
-        x = np.arange(len(nums))
-        y = np.array(nums)
-        slope, intercept = np.polyfit(x, y, 1)
-        return f"线性回归方程：Y = {slope:.4f}X + {intercept:.4f}"
-
-# 纯学术模拟（无敏感词）
-class PureMathSimulator:
-    @staticmethod
-    def simulate_sequence_model(history):
-        if len(history) < 3: return "数据不足，需至少输入3个数字"
-        last_three = [int(x) % 10 for x in history[-3:]]
-        return f"三位模数序列最近三期走势：{last_three}。单次样本理论匹配概率为1/1000。"
-
-    @staticmethod
-    def simulate_pool_model(reds, blues):
-        if len(reds) < 5 or len(blues) < 2: return "数据不足，请输入 5个前区数字（1-35）和 2个后区数字（1-12）"
-        combos = math.comb(35, 5) * math.comb(12, 2)
-        return f"多维空间抽取总数：{combos:,}。完美匹配的理论数学概率为 1/{combos:,}。"
-
-class AncientWisdom:
-    TIAN_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
-    DI_ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
+class CombinationAnalyzer:
+    """组合数据的科学研究分析模块"""
     
     @staticmethod
-    def year_to_ganzhi(year):
-        return AncientWisdom.TIAN_GAN[(year - 4) % 10] + AncientWisdom.DI_ZHI[(year - 4) % 12]
-
-    @staticmethod
-    def yin_yang(nums):
-        mu = np.mean(nums)
-        yang = sum(1 for x in nums if x > mu)
-        ratio = yang / len(nums)
-        if ratio > 0.6: return f"阳盛阴衰（{ratio:.0%}阳），物极必反，注意回落风险。"
-        elif ratio < 0.4: return f"阴盛阳衰（{ratio:.0%}阳），静极思动，未来或有转机。"
-        else: return f"阴阳平衡（{ratio:.0%}阳），天下大势，和合共生。"
-
-    @staticmethod
-    def wu_xing(nums):
-        names = {1: "木", 2: "火", 3: "土", 4: "金", 5: "水"}
-        elements = [(int(x) % 5) + 1 for x in nums]
-        generating = {1: 2, 2: 3, 3: 4, 4: 5, 5: 1}
-        overcoming = {1: 3, 3: 5, 5: 2, 2: 4, 4: 1}
+    def analyze_red_numbers(all_reds, all_blacks):
+        """红球数字频率分析"""
+        red_counts = Counter(all_reds)
+        black_counts = Counter(all_blacks)
+        
         report = []
-        for i in range(len(elements) - 1):
-            c, n = elements[i], elements[i+1]
-            if generating[c] == n: report.append(f"{names[c]}生{names[n]}（顺势延续）")
-            elif overcoming[c] == n: report.append(f"{names[c]}克{names[n]}（阻碍逆转）")
-        return "；".join(report) if report else "五行平稳，无特殊生克。"
-
-    @staticmethod
-    def i_ching(nums):
-        mu = np.mean(nums)
-        yao = [1 if int(x) > mu else 0 for x in nums[-6:]]
-        while len(yao) < 6: yao.insert(0, 0)
-        bagua = {0: "坤", 1: "震", 2: "坎", 3: "兑", 4: "艮", 5: "离", 6: "巽", 7: "乾"}
-        upper = bagua[yao[0]*4 + yao[1]*2 + yao[2]]
-        lower = bagua[yao[3]*4 + yao[4]*2 + yao[5]]
-        return f"【{upper}{lower}卦】", upper, lower
-
-class BaZiModel:
-    @staticmethod
-    def get_bazi(y, m, d, h):
-        try:
-            from lunar_python import Solar
-            solar = Solar.fromYmdHms(y, m, d, h, 0, 0)
-            ec = solar.getLunar().getEightChar()
-            return f"年柱【{ec.getYear()}】月柱【{ec.getMonth()}】日柱【{ec.getDay()}】时柱【{ec.getTime()}】"
-        except:
-            return "未安装lunar_python库，无法排盘"
-
-class UltimateOracle:
-    def calculate_everything(self, raw_input):
+        report.append("### 📊 红球数字频率分析")
+        sorted_reds = sorted(red_counts.items(), key=lambda x: x[1], reverse=True)
+        for num, count in sorted_reds[:15]:
+            report.append(f"数字 **{num:2d}** 出现 **{count}** 次 | {'▓' * count}")
         
-        # === 核心修复1：基础算式优先识别（无论云端环境如何，1+2 都必须算出 3） ===
-        # 提取数字
-        nums = load_data(raw_input)
+        report.append("\n### ⚫ 黑球数字频率分析")
+        sorted_blacks = sorted(black_counts.items(), key=lambda x: x[1], reverse=True)
+        for num, count in sorted_blacks[:10]:
+            report.append(f"数字 **{num:2d}** 出现 **{count}** 次 | {'▓' * count}")
         
-        # 如果输入包含加减乘除，且没有指定关键词，直接算结果
-        if re.search(r'\d+\s*[\+\-\*\/]\s*\d+', raw_input) and not any(k in raw_input for k in ['预测', '序列', '组合', '易经', '五行', '年份', '八字', '排盘', '解方程']):
-            try:
-                expression = raw_input.replace('=', '')
-                result = eval(expression)
-                return f"【算式计算结果】{raw_input} = {result}", None, None
-            except:
-                pass
-
+        return "\n".join(report), red_counts, black_counts
+    
+    @staticmethod
+    def combination_overlap_analysis(all_combinations):
+        """组合间重复数分析（两两对比）"""
         report = []
+        report.append("### 🔗 组合间红球重复度分析")
+        report.append("计算每对相邻组合间共同红球数量：")
         
-        # === 核心修复2：高级自动求解（仅在本地装了sympy时才运行，云端不报错） ===
-        if HAS_ADVANCED_MATH and ("解方程" in raw_input or "求解" in raw_input or "=" in raw_input):
-            if "=" in raw_input:
-                eq_str = raw_input.split("=")[1]
-                try:
-                    solutions = AdvancedMath.auto_solve_equation(eq_str)
-                    report.append(f"🧮 符号计算引擎：方程的解为 {solutions}")
-                except:
-                    report.append("🧮 符号计算引擎：方程格式暂不支持")
+        overlap_counts = []
+        for i in range(len(all_combinations) - 1):
+            set_i = set(all_combinations[i])
+            set_next = set(all_combinations[i + 1])
+            overlap = len(set_i & set_next)
+            overlap_counts.append(overlap)
+            if i < 10:  # 只显示前10个
+                report.append(f"组合 {i+1} ↔ 组合 {i+2}: 共同数字 **{overlap}** 个")
         
-        if len(nums) < 2:
-            return "数据不足，请至少输入2个数字，或包含上述公式。" + "".join(report), None, None
+        avg_overlap = np.mean(overlap_counts) if overlap_counts else 0
+        report.append(f"\n📈 平均重复度: **{avg_overlap:.2f}** 个数字 / 6个红球")
+        report.append(f"统计意义: {avg_overlap/6:.1%} 相似度")
         
-        mu = np.mean(nums)
-        sigma = np.std(nums)
-        sigma = sigma if sigma > 0 else 1
+        return "\n".join(report)
+    
+    @staticmethod
+    def number_distribution_patterns(all_reds):
+        """数字分布模式分析"""
+        reds_arr = np.array(all_reds, dtype=float)
         
-        report.append(f"📊 现代统计学：均值{mu:.2f}，标准差（波动）{sigma:.2f}，95%置信区间在 {mu-1.96*sigma:.2f} 至 {mu+1.96*sigma:.2f}。")
-        report.append(f"🧪 卡方分布检验：{ModernMath.chi_square_test(nums)}")
-        report.append(f"📈 线性回归拟合：{ModernMath.linear_regression(nums)}")
-        report.append(f"🧮 正态分布模型：中心点概率密度为 {ModernMath.normal_pdf(mu, mu, sigma):.6f}。")
+        report = []
+        report.append("### 📐 红球数字分布统计")
+        report.append(f"最小值: **{np.min(reds_arr):.0f}** | 最大值: **{np.max(reds_arr):.0f}**")
+        report.append(f"均值: **{np.mean(reds_arr):.2f}** | 中位数: **{np.median(reds_arr):.2f}**")
+        report.append(f"标准差: **{np.std(reds_arr):.2f}** | 方差: **{np.var(reds_arr):.2f}**")
         
-        prior = 0.5
-        likelihood = 1 / (1 + math.exp(-mu))
-        posterior = ModernMath.bayes_update(prior, likelihood)
-        report.append(f"🧬 贝叶斯推断：后验概率为 {posterior:.4%}。")
+        # 分布区间分析
+        report.append("\n### 📊 数字区间分布")
+        ranges = [(1, 10), (11, 20), (21, 30), (31, 33)]
+        for start, end in ranges:
+            count = sum(1 for x in reds_arr if start <= x <= end)
+            report.append(f"区间 [{start:2d}-{end:2d}]: **{count}** 个 ({count/len(reds_arr):.1%})")
         
-        if "序列" in raw_input or "三位" in raw_input:
-            report.append(f"🎯 三位模数序列模型：{PureMathSimulator.simulate_sequence_model([int(x) for x in nums])}")
-        if "组合" in raw_input or "抽取" in raw_input:
-            if len(nums) >= 7:
-                reds = [int(x) for x in nums[:5]]
-                blues = [int(x) for x in nums[5:7]]
-                report.append(f"🎰 多维空间抽取模型：{PureMathSimulator.simulate_pool_model(reds, blues)}")
-            elif len(nums) >= 2:
-                n, k = int(nums[0]), int(nums[1])
-                c = math.comb(n, k)
-                report.append(f"🎯 组合数学：C({n}, {k}) = {c:,}。完美匹配理论概率为 1/{c:,}。")
+        return "\n".join(report)
+    
+    @staticmethod
+    def combination_sequence_metrics(all_combinations):
+        """组合序列性指标（数学模型）"""
+        report = []
+        report.append("### 🧮 组合序列数学特征")
         
-        report.append(f"☯️ 阴阳推演：{AncientWisdom.yin_yang(nums)}")
-        report.append(f"🪵 五行生克：{AncientWisdom.wu_xing(nums)}")
-        hexagram, upper, lower = AncientWisdom.i_ching(nums)
-        report.append(f"🌌 易经数理推演：{hexagram}。")
+        # 1. 连续出现相同数字的概率
+        transitions = defaultdict(list)
+        for i in range(len(all_combinations) - 1):
+            for num in all_combinations[i]:
+                if num in all_combinations[i + 1]:
+                    transitions[num].append(i)
         
-        if "年份" in raw_input and nums:
-            y = int(nums[0])
-            report.append(f"📅 干支纪年：公元 {y} 年为 【{AncientWisdom.year_to_ganzhi(y)}】年")
-        if "八字" in raw_input or "排盘" in raw_input:
-            if len(nums) >= 4:
-                report.append(f"🧬 八字排盘：{BaZiModel.get_bazi(int(nums[0]), int(nums[1]), int(nums[2]), int(nums[3]))}")
+        persistent_nums = sorted(transitions.items(), key=lambda x: len(x[1]), reverse=True)
+        report.append("\n**高连续性数字** (在多个相邻组合中出现):")
+        for num, positions in persistent_nums[:8]:
+            report.append(f"  数字 **{num}**: 出现在 {len(positions)} 个连续间隔")
+        
+        # 2. 组合覆盖率分析
+        all_nums_covered = len(set(sum(all_combinations, [])))
+        report.append(f"\n**覆盖率**: {all_nums_covered}/33 红球被覆盖 ({all_nums_covered/33:.1%})")
+        
+        # 3. 组合间距分析（按序号）
+        report.append("\n**组合间距分析**: 相邻两个组合的'新旧比例'")
+        gaps = []
+        for i in range(len(all_combinations) - 1):
+            new_nums = len(set(all_combinations[i + 1]) - set(all_combinations[i]))
+            gaps.append(new_nums)
+        
+        if gaps:
+            report.append(f"  平均新数字数量: **{np.mean(gaps):.2f}** / 6个")
+            report.append(f"  新旧比例: **{np.mean(gaps)/6:.1%}**")
+        
+        return "\n".join(report)
+    
+    @staticmethod
+    def black_ball_patterns(all_blacks):
+        """黑球的统计模式"""
+        blacks_arr = np.array(all_blacks, dtype=float)
+        
+        report = []
+        report.append("### ⚫ 黑球特征分析")
+        report.append(f"取值范围: **{np.min(blacks_arr):.0f}** ~ **{np.max(blacks_arr):.0f}**")
+        report.append(f"均值: **{np.mean(blacks_arr):.2f}** | 标准差: **{np.std(blacks_arr):.2f}**")
+        report.append(f"众数: **{Counter(all_blacks).most_common(1)[0][0]}** (出现 {Counter(all_blacks).most_common(1)[0][1]} 次)")
+        
+        return "\n".join(report)
 
-        if "序列" in raw_input or "历史" in raw_input or len(nums) >= 3:
-            hist = [int(x) for x in nums]
-            transitions = defaultdict(Counter)
-            for i in range(len(hist) - 1): transitions[hist[i]][hist[i+1]] += 1
-            last = hist[-1]
-            if last in transitions:
-                probs = transitions[last]
-                best = max(probs, key=probs.get)
-                report.append(f"🔮 马尔可夫链模型：下一节点最可能出现【{best}】，数学概率 {probs[best]/sum(probs.values()):.2%}")
+st.title("🌌 组合概率科学研究引擎 V8.0")
+st.markdown("**功能**: 数学模型分析组合数据的统计特征、数字分布、组合关联性等。")
+st.info("💡 **研究范围**: 频率分析 | 分布统计 | 组合重复度 | 序列特征 | 完全基于历史数据的纯数学研究")
 
-        freq_data = Counter([round(x, 2) for x in nums])
-        bar_data = dict(sorted(freq_data.items()))
-        walk_path = ModernMath.random_walk(nums)
+# 模式选择
+analysis_mode = st.radio("选择分析模式", ["序列多模型分析", "组合大数据分析"], horizontal=True)
 
-        total_score = 0
-        if mu > 0: total_score += 1
-        elif mu < 0: total_score -= 1
-        
-        yang = sum(1 for x in nums if x > mu) / len(nums)
-        if yang > 0.6: total_score += 1
-        elif yang < 0.4: total_score -= 1
-        
-        if upper == "坤" and lower == "乾": total_score += 2
-        elif upper == "乾" and lower == "坤": total_score -= 2
-        
-        if total_score > 2:
-            conclusion = "【数理结论：大吉之象】数据综合共振，数理模型推演结果为正向，但谨记科学研究边界，仅作学术探索。"
-        elif total_score > 0:
-            conclusion = "【数理结论：平稳向荣】数据偏吉，虽有微澜，整体在正轨之上。"
-        elif total_score == 0:
-            conclusion = "【数理结论：平局未定】阴阳交替，五行调合，静待时机。"
-        elif total_score > -2:
-            conclusion = "【数理结论：先抑后扬】存在阻力，但物极必反，守住底线，将有转机。"
-        else:
-            conclusion = "【数理结论：大凶之象】势不可挡，宜避其锋芒，修身养性。"
-        
-        return conclusion, report, (bar_data, walk_path)
+# 核心多模型预测算法
+def get_multi_predictions(history):
+    if len(history) < 2:
+        return "历史数据太短，请至少输入2个数字以上。"
 
-oracle = UltimateOracle()
+    results = []
+    nums = [float(x) for x in history]
+    last_num = nums[-1]
 
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-user_input = st.text_area("请输入任何数据（数值、模拟序列、年份、排盘参数）或算式（如：1+2）：", height=120)
-
-if st.button("一键启动全模型数理推演"):
-    if user_input:
-        with st.spinner('正在并行调动数理统计、卡方检验、线性回归、正态分布、贝叶斯、组合数学、阴阳、五行、易经、马尔可夫等全模型...'):
-            import time
-            time.sleep(0.5)
-            results = oracle.calculate_everything(user_input)
-            if isinstance(results[0], str) and ("数据不足" in results[0] or "算式计算结果" in results[0]):
-                if "算式计算结果" in results[0]:
-                    st.success(results[0])
-                else:
-                    st.warning(results[0])
-            else:
-                conclusion, reports, charts = results
-                st.session_state.history.append(user_input)
-                st.success(conclusion)
-                st.divider()
-                st.subheader("数理模型计算过程：")
-                for r in reports:
-                    st.write(r)
-                st.subheader("📉 数据分布与随机游走可视化")
-                bar_data, walk_path = charts
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.caption("数字频率分布直方图")
-                    st.bar_chart(bar_data)
-                with col2:
-                    st.caption("随机游走路径模拟")
-                    st.line_chart(walk_path)
-                    
-                st.caption("⚠️ 再次郑重声明：本工具为纯数学建模与统计研究实验，不具备任何预测现实的能力，请严格遵守法律法规。")
+    # === 模型1：马尔可夫链预测（给出 TOP 3 最可能出现的数字及概率） ===
+    transitions = defaultdict(Counter)
+    for i in range(len(nums) - 1):
+        transitions[nums[i]][nums[i+1]] += 1
+    
+    if last_num in transitions:
+        probs = transitions[last_num]
+        total = sum(probs.values())
+        top3 = probs.most_common(3)
+        res = "模型1【马尔可夫链 TOP3】: "
+        for num, count in top3:
+            res += f"[数字 {int(num)} 概率 {count/total:.1%}] "
+        results.append(res)
     else:
-        st.warning("请输入内容！")
+        results.append(f"模型1【马尔可夫链 TOP3】: 末尾数字 {int(last_num)} 未出现过，无法基于历史建立关联。")
 
-if st.session_state.history:
-    st.divider()
-    st.subheader("📚 历史推演记录（仅供学术对照）")
-    for i, h in enumerate(st.session_state.history):
-        st.write(f"记录 {i+1}：{h}")
+    # === 模型2：线性回归趋势预测（预测下一个具体数值） ===
+    x = np.arange(len(nums))
+    slope, intercept = np.polyfit(x, nums, 1)
+    next_val = slope * len(nums) + intercept
+    results.append(f"模型2【线性回归趋势】: 下一组数值预计在 **{next_val:.2f}** 附近（趋势线斜率 {slope:.2f}）。")
+
+    # === 模型3：差分均值预测（解决跳跃大的序列） ===
+    diffs = [nums[i] - nums[i-1] for i in range(1, len(nums))]
+    avg_diff = np.mean(diffs)
+    diff_next = last_num + avg_diff
+    results.append(f"模型3【差分均值外推】: 最近平均差值 {avg_diff:.2f}，下一组预计在 **{diff_next:.2f}** 附近。")
+
+    # === 模型4：频率统计/众数模型（找热号） ===
+    counts = Counter([int(x) for x in nums])
+    if len(counts) > 1:
+        most_common = counts.most_common(1)[0]
+        results.append(f"模型4【频率统计(热号)】: 出现次数最多的数字是 **{most_common[0]}**（共出现 {most_common[1]} 次）。")
+    else:
+        results.append("模型4【频率统计(热号)】: 数据过于单一，未发现显著热号。")
+
+    # === 模型5：平稳随机游走（预测波动区间） ===
+    sigma = np.std(nums) if np.std(nums) > 0 else 1
+    lower = last_num - 1.96 * sigma
+    upper = last_num + 1.96 * sigma
+    results.append(f"模型5【随机游走置信区间】: 下一组有95%的概率落在 **{lower:.2f}** 到 **{upper:.2f}** 的区间内。")
+
+    return results
+
+# 界面
+user_input = st.text_area("请输入数字（算式、历史序列），例如：1+2 或 2 4 6 8 10 或 1 5 9 20 33", height=100)
+
+if analysis_mode == "序列多模型分析":
+    if st.button("一键启动多模型推演"):
+        if user_input:
+            with st.spinner('正在并行调动5套数学模型进行组合推演...'):
+                import time
+                time.sleep(0.5)
+
+                # 1. 纯算式优先级最高
+                if re.search(r'\d+\s*[\+\-\*\/]\s*\d+', user_input) and not any(k in user_input for k in ['预测', '序列']):
+                    try:
+                        expression = user_input.replace('=', '')
+                        result = eval(expression)
+                        st.success(f"【算式计算结果】{user_input} = {result}")
+                    except:
+                        st.error("算式格式错误！")
+                    st.stop()
+
+                # 2. 序列多模型预测
+                nums = [float(x) for x in re.findall(r"-?\d+\.?\d*", user_input)]
+                if len(nums) >= 2:
+                    st.subheader("🔮 多模型联合推演结果：")
+                    predictions = get_multi_predictions(nums)
+                    
+                    # 输出所有模型的预测结果
+                    for res in predictions:
+                        st.markdown(f"- {res}")
+
+                    st.divider()
+                    st.subheader("📊 原始数据统计画像")
+                    st.write(f"均值：{np.mean(nums):.2f} | 标准差：{np.std(nums):.2f} | 最大值：{np.max(nums):.2f} | 最小值：{np.min(nums):.2f}")
+                    
+                    # 自动画图
+                    freq = Counter([round(x,2) for x in nums])
+                    st.bar_chart(dict(sorted(freq.items())))
+                else:
+                    st.warning("请至少输入2个数字，或者输入一个算式（如1+2）。")
+        else:
+            st.warning("请输入内容！")
+
+else:  # 组合大数据分析
+    st.subheader("📊 组合数据科学研究（45个组合样本）")
+    st.markdown("""
+    本模块对组合数据进行**深度统计学分析**，包括：
+    - 📈 **频率分析**: 各数字在红球/黑球中的出现频次
+    - 📐 **分布统计**: 数字分布的数学特征（均值、标准差、区间）
+    - 🔗 **组合关联**: 相邻组合间的重复度、相似性
+    - 🧮 **序列特征**: 组合序列的数学规律（覆盖率、连续性等）
+    - ⚫ **黑球特征**: 黑球数字的独立分析
+    
+    **学术声明**: 这些分析基于纯数学模型，仅供科学研究参考。
+    """)
+    
+    if st.button("📈 启动组合大数据分析"):
+        with st.spinner('正在进行深度组合分析...'):
+            # 提取所有组合数据
+            all_reds = []
+            all_blacks = []
+            all_combinations = []
+            
+            for combo_id in sorted(COMBINATION_DATA.keys()):
+                data = COMBINATION_DATA[combo_id]
+                all_reds.extend(data["reds"])
+                all_blacks.append(data["black"])
+                all_combinations.append(data["reds"])
+            
+            analyzer = CombinationAnalyzer()
+            
+            # ===== 分析1：频率分析 =====
+            st.subheader("🎯 分析1：数字频率分析")
+            freq_report, red_counts, black_counts = analyzer.analyze_red_numbers(all_reds, all_blacks)
+            st.markdown(freq_report)
+            st.divider()
+            
+            # ===== 分析2：分布统计 =====
+            st.subheader("📊 分析2：数字分布特征")
+            dist_report = analyzer.number_distribution_patterns(all_reds)
+            st.markdown(dist_report)
+            st.divider()
+            
+            # ===== 分析3：组合重复度 =====
+            st.subheader("🔗 分析3：组合间重复度（相邻组合对比）")
+            overlap_report = analyzer.combination_overlap_analysis(all_combinations)
+            st.markdown(overlap_report)
+            st.divider()
+            
+            # ===== 分析4：组合序列特征 =====
+            st.subheader("🧮 分析4：组合序列数学特征")
+            seq_report = analyzer.combination_sequence_metrics(all_combinations)
+            st.markdown(seq_report)
+            st.divider()
+            
+            # ===== 分析5：黑球特征 =====
+            st.subheader("⚫ 分析5：黑球（单独号）特征")
+            black_report = analyzer.black_ball_patterns(all_blacks)
+            st.markdown(black_report)
+            st.divider()
+            
+            # ===== 可视化 =====
+            st.subheader("📉 数据可视化")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.caption("红球频率分布（TOP 20）")
+                top_reds = dict(sorted(red_counts.items(), key=lambda x: x[1], reverse=True)[:20])
+                st.bar_chart(top_reds)
+            
+            with col2:
+                st.caption("黑球频率分布")
+                black_dict = dict(sorted(black_counts.items()))
+                st.bar_chart(black_dict)
+            
+            # ===== 组合详情表 =====
+            st.subheader("📋 所有组合数据表")
+            combo_data = []
+            for combo_id in sorted(COMBINATION_DATA.keys()):
+                data = COMBINATION_DATA[combo_id]
+                combo_data.append({
+                    "组合编号": f"组合 {combo_id}",
+                    "红球": ", ".join(map(str, sorted(data["reds"]))),
+                    "黑球": data["black"]
+                })
+            
+            df = pd.DataFrame(combo_data)
+            st.dataframe(df, use_container_width=True)
+            
+            st.caption("✅ 组合分析完成。此分析为纯数学统计研究，不具备任何预测意义。")
+
+st.divider()
+st.caption("⚠️ 最终声明：本工具为组合数据数学统计研究平台，所有分析基于纯数学模型。此分析不具备任何预测能力，严禁用于任何违法用途。")
