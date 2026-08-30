@@ -1,1 +1,1 @@
-# Probability-Game-Tool
+# Probability-Game-Tool纯概率统计与数学建模研究项目
