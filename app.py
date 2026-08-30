@@ -179,7 +179,72 @@ class BaZiModel:
 # 终极融合引擎
 # ==========================================
 class UltimateOracle:
+    @staticmethod
+    def moving_average_forecast(nums, window=3):
+        if len(nums) < window:
+            return "移动平均预测：样本不足，无法生成稳定估计。"
+        seq = [float(x) for x in nums]
+        window_vals = seq[-window:]
+        forecast = sum(window_vals) / len(window_vals)
+        return f"移动平均预测（窗口={window}）：下一期均值估计约为 {forecast:.4f}，仅为时间序列的基础平滑示例。"
+
+    @staticmethod
+    def exponential_smoothing_forecast(nums, alpha=0.4):
+        if len(nums) < 2:
+            return "指数平滑预测：样本不足。"
+        seq = [float(x) for x in nums]
+        s = seq[0]
+        for x in seq[1:]:
+            s = alpha * x + (1 - alpha) * s
+        return f"指数平滑预测（α={alpha}）：下一期平滑值估计约为 {s:.4f}，仅作教学级时间序列模拟。"
+
+    @staticmethod
+    def linear_trend_forecast(nums):
+        if len(nums) < 2:
+            return "线性趋势预测：样本不足。"
+        seq = np.array([float(x) for x in nums], dtype=float)
+        x = np.arange(len(seq))
+        slope, intercept = np.polyfit(x, seq, 1)
+        pred = slope * (len(seq)) + intercept
+        return f"线性趋势预测：趋势方程 Y = {slope:.4f}X + {intercept:.4f}，下一期预测值约为 {pred:.4f}。"
+
+    @staticmethod
+    def monte_carlo_forecast(nums, trials=2000):
+        if len(nums) < 2:
+            return "蒙特卡洛模拟：样本不足。"
+        seq = np.array([float(x) for x in nums], dtype=float)
+        mu = seq.mean()
+        sigma = seq.std(ddof=1) if len(seq) > 1 else 1.0
+        sim = np.random.normal(mu, sigma, trials)
+        p5, p50, p95 = np.percentile(sim, [5, 50, 95])
+        return f"蒙特卡洛模拟（{trials}次）：中位数约 {p50:.4f}，5%~95%分位区间为 [{p5:.4f}, {p95:.4f}]，仅用于随机过程教学示例。"
+
+    @staticmethod
+    def binomial_probability(n, p, k):
+        if n < 0 or p < 0 or p > 1 or k < 0 or k > n:
+            return "二项分布参数超出有效范围。"
+        prob = math.comb(n, k) * (p ** k) * ((1 - p) ** (n - k))
+        return f"二项分布 P(X={k}) = {prob:.6f}（n={n}, p={p:.3f}）。"
+
+    @staticmethod
+    def poisson_probability(lam, k):
+        if lam < 0 or k < 0:
+            return "泊松分布参数超出有效范围。"
+        prob = (lam ** k) * math.exp(-lam) / math.factorial(k)
+        return f"泊松分布 P(X={k}) = {prob:.6f}（λ={lam:.3f}）。"
+
     def calculate_everything(self, raw_input):
+        # === 新增：基础算式优先识别（纯数学计算，直接出结果） ===
+        import re
+        if re.search(r'\d+\s*[\+\-\*\/]\s*\d+', raw_input) and not any(k in raw_input for k in ['预测', '序列', '组合', '易经', '五行', '年份', '八字', '排盘']):
+            try:
+                expression = raw_input.replace('=', '')
+                result = eval(expression)
+                return f"【算式计算结果】{raw_input} = {result}", None, None
+            except:
+                pass
+
+        # 原有的提取数字和统计逻辑在下方...
         nums = load_data(raw_input)
         report = []
         
@@ -196,7 +261,19 @@ class UltimateOracle:
         
         if len(nums) < 2:
             return "数据不足，请至少输入2个数字，或包含上述公式。" + "".join(report), None, None
-        
+
+        # === 进阶合法模型：时间序列与概率分布 ===
+        if len(nums) >= 3:
+            report.append(f"📉 {self.moving_average_forecast(nums, 3)}")
+            report.append(f"📈 {self.exponential_smoothing_forecast(nums, 0.4)}")
+            report.append(f"📐 {self.linear_trend_forecast(nums)}")
+            report.append(f"🎲 {self.monte_carlo_forecast(nums, 2000)}")
+
+        if len(nums) >= 2:
+            p = min(max(np.mean(np.array(nums)) / (np.max(np.array(nums)) + 1e-9), 0.05), 0.95)
+            report.append(f"🎯 {self.binomial_probability(max(5, int(abs(np.mean(nums)) + 1)), p, min(3, max(0, int(abs(np.mean(nums)) // 2))))}")
+            report.append(f"🧮 {self.poisson_probability(max(0.5, abs(np.mean(nums)) / 3), min(4, max(0, int(abs(np.mean(nums)) // 2))))}")
+
         mu = np.mean(nums)
         sigma = np.std(nums)
         sigma = sigma if sigma > 0 else 1
